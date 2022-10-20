@@ -18,8 +18,40 @@ All API keys require valid app and user tokens.  The app token tracks the applic
 
 #### Data Model
 
+The Job data model is wrapped by the standard rxkv `Model<T>` that provides, id, version and status. In this context the status values used are:
+
+* New() : when the job is first requested and inserted into the kv store 0 = inserted into db, 128 = queued
+* Active() : when the job is executing 0..255 = the job step
+* Processed() : when the job completes; value of 0..127 = success, 128..255 = failed 
+* Blocked() : if there is an issue that needs to be resolved before the job can complete
+* Deleted() : when the job is archived
+
+```bash
+
+struct Job {
+    topic String,
+    description String,
+    action String,
+    request_from String
+    request_to String
+    results String
+    log Vec<String>
+    errors Vec<String>
+}
+```
+
+#### Indexes
+
+Indexes are implement as sets
+
+* jobs : all the current jobs (primary index) excluding deleted
+* jobs.new : newly requested jobs
+* jobs.active : jobs in process
+* jobs.processed : jobs that have been recently completed (prior to delete/archive)
+* jobs.blocked : any jobs that are currently blocked
+
 ### Client
 
 
-###### darryl.west | 2022.10.19
+###### darryl.west | 2022.10.20
 
