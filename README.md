@@ -29,14 +29,14 @@ The Job data model is wrapped by the standard rxkv `Model<T>` that provides, id,
 ```bash
 
 struct Job {
-    topic String,
-    description String,
-    action String,
-    request_from String
-    request_to String
-    results String
-    log Vec<String>
-    errors Vec<String>
+    topic Cow<'static, str>,
+    description Cow<'static, str>,
+    action Cow<'static, str>,
+    request_from Cow<'static, str>,
+    request_to Cow<'static, str>,
+    results Cow<'static, str>,
+    log Vec<Cow<'static, str>,
+    errors Vec<Cow<'static, str>,
 }
 ```
 
@@ -53,5 +53,5 @@ Indexes are implement as sets
 ### Client
 
 
-###### darryl.west | 2022.10.20
+###### darryl.west | 2022.10.31
 
