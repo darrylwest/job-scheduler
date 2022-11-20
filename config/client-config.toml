@@ -1,0 +1,8 @@
+name = "job-client"
+service_scheme = "http"
+service_host = "localhost"
+service_port = 28600
+connect_timeout = 3 # seconds
+logging_config = "config/console.yaml"
+apikey = "e05426854d1f47e7b767a7e431594957"
+session = ""

@@ -1,5 +1,5 @@
 
-project := "rxkv"
+project := "job-scheduler"
 
 alias t := test
 alias ta := test-all
