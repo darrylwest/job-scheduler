@@ -5,7 +5,8 @@ use anyhow::Result;
 use log::info;
 // use clap::{Parser, Subcommand}
 use job_scheduler::config::Config;
-use job_scheduler::job_store::{Command, Job, JobStore};
+use job_scheduler::job_store::{Command, JobStore};
+use job_scheduler::models::Job;
 use tokio::signal;
 
 #[tokio::main]
