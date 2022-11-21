@@ -47,6 +47,10 @@ async fn main() -> Result<()> {
     let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 
+    let cmd = Command::ListKeys(0, 100);
+    let r = request_channel.send(cmd).await;
+    info!("r1 {:?}", r);
+
     match signal::ctrl_c().await {
         Ok(()) => {
             info!("ctrl-c signal, save data and remove the pid file");

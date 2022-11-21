@@ -15,9 +15,8 @@ use tokio::sync::mpsc;
 pub enum Command {
     Insert(Model<Job>),
     Find(String),
-    // Run(String),
-    // Remove(String),
-    // List(),
+    Remove(String),
+    ListKeys(usize, usize), // offset, limit
 }
 
 #[derive(Debug)]
@@ -53,22 +52,50 @@ impl JobStore {
                         info!("{msg}");
 
                         let event = JobEvent::new(&msg, Some(job.clone()));
-                        if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
-                            error!("event channel send error");
-                        }
+                        fire(&event_tx, event);
                     }
-                    Command::Find(id) => {
-                        let event = if let Some(job) = map.get(&id) {
+                    Command::Find(key) => {
+                        let event = if let Some(job) = map.get(&key) {
                             let msg = format!("found job id: {}", job.key);
                             JobEvent::new(&msg, Some(job.clone()))
                         } else {
-                            let msg = format!("job not found for id: {}", id);
+                            let msg = format!("job not found for id: {}", key);
                             JobEvent::new(&msg, None)
                         };
 
-                        if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
-                            error!("event channel send error");
+                        fire(&event_tx, event);
+                    }
+                    Command::Remove(key) => {
+                        let event = if let Some(job) = map.remove(&key) {
+                            JobEvent::new("job removed", Some(job))
+                        } else {
+                            JobEvent::new("job not found", None)
+                        };
+
+                        fire(&event_tx, event);
+                    }
+                    Command::ListKeys(offset, limit) => {
+                        let mut keys = String::new();
+                        for key in map.keys().skip(offset).take(limit) {
+                            if !keys.is_empty() {
+                                keys.push(',');
+                            }
+                            keys.push_str(key);
                         }
+
+                        let mut job = Job::new("keys", "");
+                        job.results = Some(keys);
+                        let model = Job::create_model(&job);
+                        let event = JobEvent::new("list keys", Some(model));
+
+                        fire(&event_tx, event);
+                    }
+                }
+
+                // broadcast the job event
+                fn fire(tx: &broadcast::Sender<JobEvent>, event: JobEvent) {
+                    if tx.receiver_count() > 0 && tx.send(event).is_err() {
+                        error!("event channel send error");
                     }
                 }
 
