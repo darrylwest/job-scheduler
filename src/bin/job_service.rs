@@ -5,7 +5,7 @@ use anyhow::Result;
 use log::info;
 // use clap::{Parser, Subcommand}
 use job_scheduler::config::Config;
-use job_scheduler::db::{Command, Db, Job};
+use job_scheduler::job_store::{Command, Job, JobStore};
 use tokio::signal;
 
 #[tokio::main]
@@ -15,8 +15,8 @@ async fn main() -> Result<()> {
 
     Config::write_pid_file();
 
-    let db = Db::new().await;
-    let request_channel = db.request_channel();
+    let store = JobStore::new().await;
+    let request_channel = store.request_channel();
 
     let job = Job::new("my job 100 name");
     let cmd = Command::Insert(job);

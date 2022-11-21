@@ -1,4 +1,4 @@
-/// Db
+/// JobStore
 ///
 // use anyhow::{anyhow, Result};
 // use anyhow::Result;
@@ -34,13 +34,13 @@ pub enum Command {
 }
 
 #[derive(Debug)]
-pub struct Db {
+pub struct JobStore {
     req_sender: mpsc::Sender<Command>,
 }
 
-impl Db {
+impl JobStore {
     /// create and return a valid database; connect to redis
-    pub async fn new() -> Db {
+    pub async fn new() -> JobStore {
         let req_sender: mpsc::Sender<Command>;
         let mut req_receiver: mpsc::Receiver<Command>;
         (req_sender, req_receiver) = mpsc::channel(64);
@@ -64,7 +64,7 @@ impl Db {
             req_receiver.close();
         });
 
-        Db { req_sender }
+        JobStore { req_sender }
     }
 
     /// clients get access to the broadcast channel to send requests
