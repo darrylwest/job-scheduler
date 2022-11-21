@@ -5,7 +5,6 @@ alias t := test
 alias ta := test-all
 alias b := build
 alias rel := release
-alias sup := supervisor
 
 # run the standard tests
 test:
@@ -28,20 +27,12 @@ docs:
 
 # run the debug app
 run:
-    clear && cargo run --bin supervisor
-
-# run the supervisor to start/monitor the farm
-supervisor:
-    clear && cargo run --bin supervisor
-
-# shutdown the farm
-shutdown:
-    clear && cargo run --bin supervisor -- --shutdown
+    clear && cargo run --bin job_service
 
 # build the release
 release:
     clear
-    cargo build --release && clear && ./target/release/spacial_controller --help
+    cargo build --release
 
 # watch the current folders and run tests when a file is changed
 watch:

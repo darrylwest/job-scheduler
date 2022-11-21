@@ -15,7 +15,6 @@ pub struct Config {
     pub version: String,
     pub host: String,
     pub port: u16,
-    pub auth_key_file: String,
     pub logging_config: String,
     pub data_folder: String,
 }
@@ -45,26 +44,9 @@ impl Config {
             version: self.version.to_string(),
             host: self.host.to_string(),
             port: self.port,
-            auth_key_file: self.auth_key_file.to_string(),
             logging_config: self.logging_config.to_string(),
             data_folder: self.data_folder.to_string(),
         }
-    }
-
-    /// read the key from text file
-    pub fn auth(&self) -> String {
-        let home = std::env::var("HOME").expect("user should have a home");
-        let path = format!("{}/{}/{}", home, ".ssh", self.auth_key_file);
-        let file = File::open(path).expect("key file should exist");
-        let mut reader = BufReader::new(file);
-        let mut text = String::new();
-        let n = reader
-            .read_to_string(&mut text)
-            .expect("should be a file here: {file}");
-
-        assert!(n != 0, "couldn't read from auth file.");
-
-        text
     }
 
     /// start the logger
@@ -110,14 +92,6 @@ mod tests {
         let config = Config::read_config("tests/server-config.toml").unwrap();
         assert!(!config.name.is_empty());
         assert!(!config.data_folder.is_empty());
-    }
-
-    #[test]
-    fn auth() {
-        let config = Config::read_config("tests/server-config.toml").unwrap();
-
-        let ss = config.auth();
-        assert_ne!(ss.len(), 0);
     }
 
     #[test]
