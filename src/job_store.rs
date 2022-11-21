@@ -46,6 +46,10 @@ impl Job {
 #[derive(Debug)]
 pub enum Command {
     Insert(Job),
+    Find(String),
+    // Run(String),
+    // Remove(String),
+    // List(),
 }
 
 #[derive(Debug)]
@@ -81,6 +85,19 @@ impl JobStore {
                         info!("{msg}");
 
                         let event = JobEvent::new(&msg);
+                        if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
+                            error!("event channel send error");
+                        }
+                    }
+                    Command::Find(id) => {
+                        let event = if let Some(job) = map.get(&id) {
+                            let msg = format!("found job id: {}", job.id);
+                            JobEvent::new(&msg)
+                        } else {
+                            let msg = format!("job not found for id: {}", id);
+                            JobEvent::new(&msg)
+                        };
+
                         if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
                             error!("event channel send error");
                         }

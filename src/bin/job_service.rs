@@ -32,7 +32,15 @@ async fn main() -> Result<()> {
     info!("r1 {:?}", r);
 
     let job = Job::new("my job 200 name");
-    let cmd = Command::Insert(job);
+    let cmd = Command::Insert(job.clone());
+    let r = request_channel.send(cmd).await;
+    info!("r1 {:?}", r);
+
+    let cmd = Command::Find(job.id);
+    let r = request_channel.send(cmd).await;
+    info!("r1 {:?}", r);
+
+    let cmd = Command::Find("bad-job-id".to_string());
     let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 
