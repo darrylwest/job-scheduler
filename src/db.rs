@@ -17,6 +17,15 @@ pub struct Job {
     pub name: String,
 }
 
+impl Job {
+    pub fn new(name: &str) -> Job {
+        Job {
+            id: domain_keys::keys::RouteKey::create(),
+            name: name.to_string(),
+        }
+    }
+}
+
 // type Callback: tokio::sync::oneshot::Sender;
 
 #[derive(Debug)]
@@ -59,7 +68,7 @@ impl Db {
     }
 
     /// clients get access to the broadcast channel to send requests
-    pub fn sender(&self) -> mpsc::Sender<Command> {
+    pub fn request_channel(&self) -> mpsc::Sender<Command> {
         self.req_sender.clone()
     }
 }

@@ -16,16 +16,16 @@ async fn main() -> Result<()> {
     Config::write_pid_file();
 
     let db = Db::new().await;
+    let request_channel = db.request_channel();
 
-    let job = Job {
-        id: "job-100".to_string(),
-        name: "my job 100 name".to_string(),
-    };
-
+    let job = Job::new("my job 100 name");
     let cmd = Command::Insert(job);
-    let sender = db.sender();
-    let r = sender.send(cmd).await;
+    let r = request_channel.send(cmd).await;
+    info!("r1 {:?}", r);
 
+    let job = Job::new("my job 200 name");
+    let cmd = Command::Insert(job);
+    let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 
     match signal::ctrl_c().await {
