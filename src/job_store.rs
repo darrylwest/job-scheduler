@@ -14,14 +14,16 @@ use tokio::sync::mpsc;
 pub struct JobEvent {
     pub mid: String,
     pub message: String,
+    pub job: Option<Job>,
 }
 
 impl JobEvent {
     /// create a new job
-    pub fn new(message: &str) -> JobEvent {
+    pub fn new(message: &str, job: Option<Job>) -> JobEvent {
         JobEvent {
             mid: TimeStampKey::create(),
             message: message.to_string(),
+            job,
         }
     }
 }
@@ -84,7 +86,7 @@ impl JobStore {
                         let msg = format!("inserted job, id: {}", job.id);
                         info!("{msg}");
 
-                        let event = JobEvent::new(&msg);
+                        let event = JobEvent::new(&msg, Some(job.clone()));
                         if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
                             error!("event channel send error");
                         }
@@ -92,10 +94,10 @@ impl JobStore {
                     Command::Find(id) => {
                         let event = if let Some(job) = map.get(&id) {
                             let msg = format!("found job id: {}", job.id);
-                            JobEvent::new(&msg)
+                            JobEvent::new(&msg, Some(job.clone()))
                         } else {
                             let msg = format!("job not found for id: {}", id);
-                            JobEvent::new(&msg)
+                            JobEvent::new(&msg, None)
                         };
 
                         if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
