@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
 
     match signal::ctrl_c().await {
         Ok(()) => {
-            println!("ctrl-c signal, save data and remove the pid file");
+            info!("ctrl-c signal, save data and remove the pid file");
 
             Config::remove_pid_file();
         }
