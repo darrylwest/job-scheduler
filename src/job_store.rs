@@ -1,4 +1,4 @@
-/// JobStore
+/// JobStore.  A lock-less, thread safe in-memory data store implemented with messaging.
 ///
 // use anyhow::Result;
 use log::{error, info};
