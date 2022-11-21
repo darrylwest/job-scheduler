@@ -3,7 +3,7 @@
 // use anyhow::Result;
 use log::{error, info};
 // use serde::Serialize;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 

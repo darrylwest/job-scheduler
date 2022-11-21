@@ -1,6 +1,6 @@
 # job-scheduler
 
-A redis backed, REST job scheduler written in rust
+An in-memory backed, event drivent, REST job scheduler written in rust.
 
 ### Server
 
@@ -53,5 +53,5 @@ Indexes are implement as sets
 ### Client
 
 
-###### darryl.west | 2022.10.31
+###### darryl.west | 2022.11.21
 
