@@ -1,13 +1,11 @@
 /// JobStore
 ///
-// use anyhow::{anyhow, Result};
 // use anyhow::Result;
-use log::info;
+use log::{error, info};
 // use serde::Serialize;
-// use std::hash::Hash;
 use std::collections::HashMap;
+use tokio::sync::broadcast;
 use tokio::sync::mpsc;
-// use tokio::sync::oneshot;
 
 // use domain_keys::models::Model;
 
@@ -36,6 +34,7 @@ pub enum Command {
 #[derive(Debug)]
 pub struct JobStore {
     req_sender: mpsc::Sender<Command>,
+    broadcaster: broadcast::Sender<String>,
 }
 
 impl JobStore {
@@ -43,7 +42,14 @@ impl JobStore {
     pub async fn new() -> JobStore {
         let req_sender: mpsc::Sender<Command>;
         let mut req_receiver: mpsc::Receiver<Command>;
+
         (req_sender, req_receiver) = mpsc::channel(64);
+
+        let broadcaster: broadcast::Sender<String>;
+        let _subscriber: broadcast::Receiver<String>;
+        (broadcaster, _subscriber) = broadcast::channel(64);
+
+        let event_tx = broadcaster.clone();
 
         tokio::spawn(async move {
             let mut map: HashMap<String, Job> = HashMap::new();
@@ -55,6 +61,12 @@ impl JobStore {
                         info!("insert job: {:?}", job);
 
                         map.insert(job.id.to_string(), job.clone());
+
+                        if event_tx.receiver_count() > 0
+                            && event_tx.send(format!("inserted {}", &job.name)).is_err()
+                        {
+                            error!("event channel send error");
+                        }
                     }
                 }
 
@@ -64,12 +76,20 @@ impl JobStore {
             req_receiver.close();
         });
 
-        JobStore { req_sender }
+        JobStore {
+            req_sender,
+            broadcaster,
+        }
     }
 
     /// clients get access to the broadcast channel to send requests
     pub fn request_channel(&self) -> mpsc::Sender<Command> {
         self.req_sender.clone()
+    }
+
+    /// subscribe to job events
+    pub fn subscribe(&self) -> broadcast::Receiver<String> {
+        self.broadcaster.subscribe()
     }
 }
 

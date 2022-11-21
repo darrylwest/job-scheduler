@@ -16,6 +16,14 @@ async fn main() -> Result<()> {
     Config::write_pid_file();
 
     let store = JobStore::new().await;
+    let mut event_channel = store.subscribe();
+
+    tokio::spawn(async move {
+        while let Ok(event) = event_channel.recv().await {
+            info!("event: {:?}", event);
+        }
+    });
+
     let request_channel = store.request_channel();
 
     let job = Job::new("my job 100 name");
