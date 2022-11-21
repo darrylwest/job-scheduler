@@ -28,15 +28,23 @@ impl JobEvent {
 
 #[derive(Debug, Default, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Job {
-    pub id: String,
-    pub name: String,
+    pub topic: String,
+    pub description: String,
+    pub action: String,
+    pub results: Option<String>,
+    pub log: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 impl Job {
-    pub fn new(name: &str) -> Job {
+    pub fn new(topic: &str, action: &str) -> Job {
         Job {
-            id: RouteKey::create(),
-            name: name.to_string(),
+            topic: topic.to_string(),
+            description: String::new(),
+            action: action.to_string(),
+            results: None,
+            log: Vec::new(),
+            errors: Vec::new(),
         }
     }
 
@@ -61,7 +69,7 @@ mod tests {
 
     #[test]
     fn new() {
-        let job = Job::new("my test job");
+        let job = Job::new("my test job", "backup");
         let model = Job::create_model(&job);
 
         assert_eq!(model.value, job);
