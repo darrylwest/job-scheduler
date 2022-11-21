@@ -3,11 +3,28 @@
 // use anyhow::Result;
 use log::{error, info};
 // use serde::Serialize;
+use domain_keys::keys::{RouteKey, TimeStampKey};
 use hashbrown::HashMap;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
 // use domain_keys::models::Model;
+
+#[derive(Debug, Default, Clone)]
+pub struct JobEvent {
+    pub mid: String,
+    pub message: String,
+}
+
+impl JobEvent {
+    /// create a new job
+    pub fn new(message: &str) -> JobEvent {
+        JobEvent {
+            mid: TimeStampKey::create(),
+            message: message.to_string(),
+        }
+    }
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct Job {
@@ -18,7 +35,7 @@ pub struct Job {
 impl Job {
     pub fn new(name: &str) -> Job {
         Job {
-            id: domain_keys::keys::RouteKey::create(),
+            id: RouteKey::create(),
             name: name.to_string(),
         }
     }
@@ -34,7 +51,7 @@ pub enum Command {
 #[derive(Debug)]
 pub struct JobStore {
     req_sender: mpsc::Sender<Command>,
-    broadcaster: broadcast::Sender<String>,
+    broadcaster: broadcast::Sender<JobEvent>,
 }
 
 impl JobStore {
@@ -45,8 +62,8 @@ impl JobStore {
 
         (req_sender, req_receiver) = mpsc::channel(64);
 
-        let broadcaster: broadcast::Sender<String>;
-        let _subscriber: broadcast::Receiver<String>;
+        let broadcaster: broadcast::Sender<JobEvent>;
+        let _subscriber: broadcast::Receiver<JobEvent>;
         (broadcaster, _subscriber) = broadcast::channel(64);
 
         let event_tx = broadcaster.clone();
@@ -58,13 +75,13 @@ impl JobStore {
                 info!("req recv: {:?}", cmd);
                 match cmd {
                     Command::Insert(job) => {
-                        info!("insert job: {:?}", job);
-
                         map.insert(job.id.to_string(), job.clone());
 
-                        if event_tx.receiver_count() > 0
-                            && event_tx.send(format!("inserted {}", &job.name)).is_err()
-                        {
+                        let msg = format!("inserted job, id: {}", job.id);
+                        info!("{msg}");
+
+                        let event = JobEvent::new(&msg);
+                        if event_tx.receiver_count() > 0 && event_tx.send(event).is_err() {
                             error!("event channel send error");
                         }
                     }
@@ -88,7 +105,7 @@ impl JobStore {
     }
 
     /// subscribe to job events
-    pub fn subscribe(&self) -> broadcast::Receiver<String> {
+    pub fn subscribe(&self) -> broadcast::Receiver<JobEvent> {
         self.broadcaster.subscribe()
     }
 }
