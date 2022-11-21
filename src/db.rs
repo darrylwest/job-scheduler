@@ -1,32 +1,54 @@
-use std::collections::HashMap;
-
 /// Db
 ///
 // use anyhow::{anyhow, Result};
+// use anyhow::Result;
 use log::info;
 // use serde::Serialize;
 // use std::hash::Hash;
+use std::collections::HashMap;
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::Sender;
+// use tokio::sync::oneshot;
 
 // use domain_keys::models::Model;
 
+#[derive(Debug, Default, Clone)]
+pub struct Job {
+    pub id: String,
+    pub name: String,
+}
+
+// type Callback: tokio::sync::oneshot::Sender;
+
+#[derive(Debug)]
+pub enum Command {
+    Insert(Job),
+}
+
 #[derive(Debug)]
 pub struct Db {
-    req_sender: Sender<String>,
+    req_sender: mpsc::Sender<Command>,
 }
 
 impl Db {
     /// create and return a valid database; connect to redis
     pub async fn new() -> Db {
-        let (req_sender, mut req_receiver) = mpsc::channel(32);
+        let req_sender: mpsc::Sender<Command>;
+        let mut req_receiver: mpsc::Receiver<Command>;
+        (req_sender, req_receiver) = mpsc::channel(64);
 
         tokio::spawn(async move {
-            let mut map: HashMap<String, String> = HashMap::new();
+            let mut map: HashMap<String, Job> = HashMap::new();
 
             while let Some(cmd) = req_receiver.recv().await {
-                info!("req recv: {}", cmd);
-                map.insert(cmd, "my value".to_string());
+                info!("req recv: {:?}", cmd);
+                match cmd {
+                    Command::Insert(job) => {
+                        info!("insert job: {:?}", job);
+
+                        map.insert(job.id.to_string(), job.clone());
+                    }
+                }
+
                 info!("map: {:?}", map);
             }
 
@@ -37,10 +59,9 @@ impl Db {
     }
 
     /// clients get access to the broadcast channel to send requests
-    pub fn sender(&self) -> Sender<String> {
+    pub fn sender(&self) -> mpsc::Sender<Command> {
         self.req_sender.clone()
     }
-
 }
 
 #[cfg(test)]

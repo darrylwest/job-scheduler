@@ -7,6 +7,5 @@ pub mod db;
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const APIKEY: (&str, &str) = ("apikey", "3678fde6af84c28f93667fd9623ae6df");
-pub const SERVER_PID_FILE: &str = "key-service.pid";
+pub const SERVER_PID_FILE: &str = "job-scheduler.pid";
 pub const CLIENT_SESSION_KEY: &str = "client-session";
-

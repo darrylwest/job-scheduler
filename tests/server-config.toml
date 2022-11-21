@@ -1,0 +1,6 @@
+name = "job-scheduler-app-config"
+version = "0.1.0"
+host = "127.0.0.1"
+port = 28600
+logging_config = "config/console.yaml"
+data_folder = "data"

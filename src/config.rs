@@ -99,7 +99,7 @@ mod tests {
         let config = Config::read_config("tests/server-config.toml").unwrap();
         let addr = config.socket_address();
 
-        assert_eq!(format!("{}", addr), "127.0.0.1:28400");
+        assert_eq!(format!("{}", addr), "127.0.0.1:28600");
     }
 
     #[test]
