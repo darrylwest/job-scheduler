@@ -28,16 +28,18 @@ async fn main() -> Result<()> {
     let request_channel = store.request_channel();
 
     let job = Job::new("my job 100 name");
-    let cmd = Command::Insert(job);
+    let model = Job::create_model(&job);
+    let cmd = Command::Insert(model);
     let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 
     let job = Job::new("my job 200 name");
-    let cmd = Command::Insert(job.clone());
+    let model = Job::create_model(&job);
+    let cmd = Command::Insert(model.clone());
     let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 
-    let cmd = Command::Find(job.id);
+    let cmd = Command::Find(model.key.to_string());
     let r = request_channel.send(cmd).await;
     info!("r1 {:?}", r);
 

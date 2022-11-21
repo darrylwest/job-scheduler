@@ -12,16 +12,16 @@ use serde::{Deserialize, Serialize};
 pub struct JobEvent {
     pub mid: String,
     pub message: String,
-    pub job: Option<Job>,
+    pub model: Option<Model<Job>>,
 }
 
 impl JobEvent {
     /// create a new job
-    pub fn new(message: &str, job: Option<Job>) -> JobEvent {
+    pub fn new(message: &str, model: Option<Model<Job>>) -> JobEvent {
         JobEvent {
             mid: TimeStampKey::create(),
             message: message.to_string(),
-            job,
+            model,
         }
     }
 }

@@ -4,6 +4,7 @@
 use log::{error, info};
 // use serde::Serialize;
 use crate::models::{Job, JobEvent};
+use domain_keys::models::Model;
 use hashbrown::HashMap;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
@@ -12,7 +13,7 @@ use tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub enum Command {
-    Insert(Job),
+    Insert(Model<Job>),
     Find(String),
     // Run(String),
     // Remove(String),
@@ -40,15 +41,15 @@ impl JobStore {
         let event_tx = broadcaster.clone();
 
         tokio::spawn(async move {
-            let mut map: HashMap<String, Job> = HashMap::new();
+            let mut map: HashMap<String, Model<Job>> = HashMap::new();
 
             while let Some(cmd) = req_receiver.recv().await {
                 info!("req recv: {:?}", cmd);
                 match cmd {
                     Command::Insert(job) => {
-                        map.insert(job.id.to_string(), job.clone());
+                        map.insert(job.key.to_string(), job.clone());
 
-                        let msg = format!("inserted job, id: {}", job.id);
+                        let msg = format!("inserted job, id: {}", job.key);
                         info!("{msg}");
 
                         let event = JobEvent::new(&msg, Some(job.clone()));
@@ -58,7 +59,7 @@ impl JobStore {
                     }
                     Command::Find(id) => {
                         let event = if let Some(job) = map.get(&id) {
-                            let msg = format!("found job id: {}", job.id);
+                            let msg = format!("found job id: {}", job.key);
                             JobEvent::new(&msg, Some(job.clone()))
                         } else {
                             let msg = format!("job not found for id: {}", id);
