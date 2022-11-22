@@ -15,11 +15,10 @@ use tokio::sync::oneshot;
 
 #[derive(Debug)]
 pub enum Command {
-    Insert(Model<Job>),
-    Find(String),
+    Insert(Model<Job>, oneshot::Sender<Option<Model<Job>>>),
+    Find(String, oneshot::Sender<Option<Model<Job>>>),
     Remove(String),
     ListKeys(usize, usize), // offset, limit
-    Callback(String, oneshot::Sender<Option<Model<Job>>>),
 }
 
 #[derive(Debug)]
@@ -48,7 +47,7 @@ impl JobStore {
 
         let event_tx = broadcaster.clone();
 
-        // the map stays inside the spawn loop and shares updates outside through 
+        // the map stays inside the spawn loop and shares updates outside through
         // broadcast events.
 
         let mut map: HashMap<String, Model<Job>> = HashMap::new();
@@ -60,25 +59,20 @@ impl JobStore {
             while let Some(cmd) = req_receiver.recv().await {
                 info!("req recv: {:?}", cmd);
                 match cmd {
-                    Command::Insert(job) => {
+                    Command::Insert(job, tx) => {
                         map.insert(job.key.to_string(), job.clone());
 
-                        let msg = format!("inserted job, id: {}", job.key);
-                        info!("{msg}");
+                        let _ = tx.send(Some(job.clone()));
 
-                        let event = JobEvent::new(&msg, Some(job.clone()));
-                        fire(&event_tx, event);
+                        // let event = JobEvent::new(&msg, Some(job.clone()));
+                        // fire(&event_tx, event);
                     }
-                    Command::Find(key) => {
-                        let event = if let Some(job) = map.get(&key) {
-                            let msg = format!("found job id: {}", job.key);
-                            JobEvent::new(&msg, Some(job.clone()))
+                    Command::Find(key, tx) => {
+                        let _ = if let Some(model) = map.get(&key) {
+                            tx.send(Some(model.clone()))
                         } else {
-                            let msg = format!("job not found for id: {}", key);
-                            JobEvent::new(&msg, None)
+                            tx.send(None)
                         };
-
-                        fire(&event_tx, event);
                     }
                     Command::Remove(key) => {
                         let event = if let Some(job) = map.remove(&key) {
@@ -104,16 +98,6 @@ impl JobStore {
                         let event = JobEvent::new("list keys", Some(model));
 
                         fire(&event_tx, event);
-                    }
-                    Command::Callback(key, tx) => {
-                        let model = if let Some(job) = map.get(&key) {
-                            Some(job.clone())
-                        } else {
-                            None
-                        };
-
-                        let r = tx.send(model);
-                        info!("tx: {:?}", r);
                     }
                 }
 

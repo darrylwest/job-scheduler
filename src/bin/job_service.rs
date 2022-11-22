@@ -28,32 +28,39 @@ async fn main() -> Result<()> {
 
     let request_channel = store.request_channel();
 
+    // create an insert function
     let job = Job::new("my job 100 name", "no-op");
     let model = Job::create_model(&job);
-    let cmd = Command::Insert(model);
-    let r = request_channel.send(cmd).await;
-    debug!("r1 {:?}", r);
-
-    let job = Job::new("my job 200 name", "no-op");
-    let model = Job::create_model(&job);
     let key = model.key.to_string();
-    let cmd = Command::Insert(model.clone());
-    let r = request_channel.send(cmd).await;
-    debug!("r1 {:?}", r);
 
-    let cmd = Command::Find(model.key.to_string());
-    let r = request_channel.send(cmd).await;
-    debug!("r1 {:?}", r);
+    // step 1 create the channel
+    let (tx, rx) = oneshot::channel();
 
-    let cmd = Command::Find("bad-job-id".to_string());
-    let r = request_channel.send(cmd).await;
-    debug!("r1 {:?}", r);
+    // step 2 define the callback
+    let join = tokio::task::spawn(async move {
+        let cbd = rx.await;
+        info!(
+            "Insert CALLBACK data: {:?} {}",
+            cbd,
+            String::from("*").repeat(20)
+        );
+        match cbd {
+            Ok(data) => data,
+            _ => None,
+        }
+    });
 
-    let cmd = Command::ListKeys(0, 100);
+    // 3) create and send the request message
+    let cmd = Command::Insert(model, tx);
     let r = request_channel.send(cmd).await;
-    debug!("r1 {:?}", r);
+    debug!("Insert call result {:?}", r);
 
-    // this is the sequece that should be followed: 1) create the onshot channel 
+    // 4)
+    let data = join.await?;
+    info!("Insert callback data: {:?}", data);
+
+    // this is the sequece that should be followed:
+    // 1) create the onshot channel
     let (tx, rx) = oneshot::channel();
 
     // 2) define the callback task with join
@@ -67,13 +74,17 @@ async fn main() -> Result<()> {
     });
 
     // 3) create and send the request message
-    let cmd = Command::Callback(key, tx);
+    let cmd = Command::Find(key, tx);
     let r = request_channel.send(cmd).await;
-    info!("CALLBACK call result {:?}", r);
+    debug!("CALLBACK call result {:?}", r);
 
     // 4) wait for the join handle to return results
     let data = join.await?;
-    info!("CALLBACK data: {:?} {}", data, String::from("~").repeat(25));
+    info!(
+        "Find CALLBACK data: {:?} {}",
+        data,
+        String::from("~").repeat(25)
+    );
 
     match signal::ctrl_c().await {
         Ok(()) => {
