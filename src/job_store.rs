@@ -18,7 +18,7 @@ pub enum Command {
     Insert(Model<Job>, oneshot::Sender<Option<Model<Job>>>),
     Find(String, oneshot::Sender<Option<Model<Job>>>),
     Remove(String),
-    ListKeys(usize, usize), // offset, limit
+    List(usize, usize, oneshot::Sender<Vec<Model<Job>>>), // offset, limit, list (could be empty)
 }
 
 #[derive(Debug)]
@@ -83,21 +83,15 @@ impl JobStore {
 
                         fire(&event_tx, event);
                     }
-                    Command::ListKeys(offset, limit) => {
-                        let mut keys = String::new();
-                        for key in map.keys().skip(offset).take(limit) {
-                            if !keys.is_empty() {
-                                keys.push(',');
-                            }
-                            keys.push_str(key);
+                    Command::List(offset, limit, tx) => {
+                        let mut list = Vec::with_capacity(map.len());
+                        for (_key, value) in map.iter().skip(offset).take(limit) {
+                            list.push(value.clone());
                         }
 
-                        let mut job = Job::new("keys", "");
-                        job.results = Some(keys);
-                        let model = Job::create_model(&job);
-                        let event = JobEvent::new("list keys", Some(model));
+                        let _ = tx.send(list);
 
-                        fire(&event_tx, event);
+                        // fire(&event_tx, event);
                     }
                 }
 

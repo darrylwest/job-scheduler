@@ -2,37 +2,17 @@
 //!
 
 use anyhow::Result;
-use log::{debug, info};
+use log::{debug, error, info};
 // use clap::{Parser, Subcommand}
+use domain_keys::models::Model;
 use job_scheduler::config::Config;
 use job_scheduler::job_store::{Command, JobStore};
 use job_scheduler::models::Job;
 use tokio::signal;
+use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let config = Config::read_config("config/server-config.toml")?;
-    config.start_logger()?;
-
-    Config::write_pid_file();
-
-    let store = JobStore::new().await;
-    let mut event_channel = store.subscribe();
-
-    tokio::spawn(async move {
-        while let Ok(event) = event_channel.recv().await {
-            debug!("event: {:?}", event);
-        }
-    });
-
-    let request_channel = store.request_channel();
-
-    // create an insert function
-    let job = Job::new("my job 100 name", "no-op");
-    let model = Job::create_model(&job);
-    let key = model.key.to_string();
-
+async fn insert(request_channel: mpsc::Sender<Command>, model: Model<Job>) -> Result<()> {
     // step 1 create the channel
     let (tx, rx) = oneshot::channel();
 
@@ -59,6 +39,10 @@ async fn main() -> Result<()> {
     let data = join.await?;
     info!("Insert callback data: {:?}", data);
 
+    Ok(())
+}
+
+async fn find(request_channel: mpsc::Sender<Command>, key: &str) -> Option<Model<Job>> {
     // this is the sequece that should be followed:
     // 1) create the onshot channel
     let (tx, rx) = oneshot::channel();
@@ -74,17 +58,50 @@ async fn main() -> Result<()> {
     });
 
     // 3) create and send the request message
-    let cmd = Command::Find(key, tx);
+    let cmd = Command::Find(key.to_string(), tx);
     let r = request_channel.send(cmd).await;
     debug!("CALLBACK call result {:?}", r);
 
     // 4) wait for the join handle to return results
-    let data = join.await?;
-    info!(
-        "Find CALLBACK data: {:?} {}",
-        data,
-        String::from("~").repeat(25)
-    );
+    join.await.unwrap()
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let config = Config::read_config("config/server-config.toml")?;
+    config.start_logger()?;
+
+    Config::write_pid_file();
+
+    let store = JobStore::new().await;
+    let mut event_channel = store.subscribe();
+
+    tokio::spawn(async move {
+        while let Ok(event) = event_channel.recv().await {
+            debug!("event: {:?}", event);
+        }
+    });
+
+    // let request_channel = store.request_channel();
+
+    // create an insert function
+    let job = Job::new("my job 100 name", "no-op");
+    let model = Job::create_model(&job);
+    let key = model.key.to_string();
+
+    let r = insert(store.request_channel(), model).await.is_err();
+    if r {
+        error!("could not insert {}", key);
+    }
+
+    if let Some(model) = find(store.request_channel(), &key).await {
+        info!("found job {:?}", model);
+    } else {
+        error!("could not find job for key: {}", &key);
+    }
+
+    // list
+    // 1) create the channel
 
     match signal::ctrl_c().await {
         Ok(()) => {
