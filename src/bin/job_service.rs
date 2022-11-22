@@ -2,12 +2,13 @@
 //!
 
 use anyhow::Result;
-use log::info;
+use log::{debug, info};
 // use clap::{Parser, Subcommand}
 use job_scheduler::config::Config;
 use job_scheduler::job_store::{Command, JobStore};
 use job_scheduler::models::Job;
 use tokio::signal;
+use tokio::sync::oneshot;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,7 +22,7 @@ async fn main() -> Result<()> {
 
     tokio::spawn(async move {
         while let Ok(event) = event_channel.recv().await {
-            info!("event: {:?}", event);
+            debug!("event: {:?}", event);
         }
     });
 
@@ -31,25 +32,36 @@ async fn main() -> Result<()> {
     let model = Job::create_model(&job);
     let cmd = Command::Insert(model);
     let r = request_channel.send(cmd).await;
-    info!("r1 {:?}", r);
+    debug!("r1 {:?}", r);
 
     let job = Job::new("my job 200 name", "no-op");
     let model = Job::create_model(&job);
+    let key = model.key.to_string();
     let cmd = Command::Insert(model.clone());
     let r = request_channel.send(cmd).await;
-    info!("r1 {:?}", r);
+    debug!("r1 {:?}", r);
 
     let cmd = Command::Find(model.key.to_string());
     let r = request_channel.send(cmd).await;
-    info!("r1 {:?}", r);
+    debug!("r1 {:?}", r);
 
     let cmd = Command::Find("bad-job-id".to_string());
     let r = request_channel.send(cmd).await;
-    info!("r1 {:?}", r);
+    debug!("r1 {:?}", r);
 
     let cmd = Command::ListKeys(0, 100);
     let r = request_channel.send(cmd).await;
-    info!("r1 {:?}", r);
+    debug!("r1 {:?}", r);
+
+    let (tx, rx) = oneshot::channel();
+    tokio::spawn(async move {
+        let cbd = rx.await;
+        info!("CALLBACK data: {:?} {}", cbd, String::from("*").repeat(20));
+    });
+
+    let cmd = Command::Callback(key, tx);
+    let r = request_channel.send(cmd).await;
+    info!("CALLBACK call result {:?}", r);
 
     match signal::ctrl_c().await {
         Ok(()) => {

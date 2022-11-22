@@ -9,6 +9,7 @@ use hashbrown::HashMap;
 use std::vec::Vec;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 
 // type Callback: tokio::sync::oneshot::Sender;
 
@@ -18,6 +19,7 @@ pub enum Command {
     Find(String),
     Remove(String),
     ListKeys(usize, usize), // offset, limit
+    Callback(String, oneshot::Sender<Option<Model<Job>>>),
 }
 
 #[derive(Debug)]
@@ -45,6 +47,9 @@ impl JobStore {
         (broadcaster, _subscriber) = broadcast::channel(64);
 
         let event_tx = broadcaster.clone();
+
+        // the map stays inside the spawn loop and shares updates outside through 
+        // broadcast events.
 
         let mut map: HashMap<String, Model<Job>> = HashMap::new();
         for job in job_list {
@@ -99,6 +104,16 @@ impl JobStore {
                         let event = JobEvent::new("list keys", Some(model));
 
                         fire(&event_tx, event);
+                    }
+                    Command::Callback(key, tx) => {
+                        let model = if let Some(job) = map.get(&key) {
+                            Some(job.clone())
+                        } else {
+                            None
+                        };
+
+                        let r = tx.send(model);
+                        info!("tx: {:?}", r);
                     }
                 }
 
