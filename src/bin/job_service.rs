@@ -53,15 +53,27 @@ async fn main() -> Result<()> {
     let r = request_channel.send(cmd).await;
     debug!("r1 {:?}", r);
 
+    // this is the sequece that should be followed: 1) create the onshot channel 
     let (tx, rx) = oneshot::channel();
-    tokio::spawn(async move {
+
+    // 2) define the callback task with join
+    let join = tokio::task::spawn(async move {
         let cbd = rx.await;
-        info!("CALLBACK data: {:?} {}", cbd, String::from("*").repeat(20));
+        info!("CALLBACK data: {:?} {}", cbd, String::from("*").repeat(25));
+        match cbd {
+            Ok(data) => data,
+            _ => None,
+        }
     });
 
+    // 3) create and send the request message
     let cmd = Command::Callback(key, tx);
     let r = request_channel.send(cmd).await;
     info!("CALLBACK call result {:?}", r);
+
+    // 4) wait for the join handle to return results
+    let data = join.await?;
+    info!("CALLBACK data: {:?} {}", data, String::from("~").repeat(25));
 
     match signal::ctrl_c().await {
         Ok(()) => {
