@@ -6,6 +6,7 @@ use log::{error, info};
 use crate::models::{Job, JobEvent};
 use domain_keys::models::Model;
 use hashbrown::HashMap;
+use std::vec::Vec;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
@@ -28,6 +29,12 @@ pub struct JobStore {
 impl JobStore {
     /// create and return a valid database; connect to redis
     pub async fn new() -> JobStore {
+        let job_list: Vec<Model<Job>> = Vec::new();
+        JobStore::with_list(job_list).await
+    }
+
+    /// create with a list of jobs
+    pub async fn with_list(job_list: Vec<Model<Job>>) -> JobStore {
         let req_sender: mpsc::Sender<Command>;
         let mut req_receiver: mpsc::Receiver<Command>;
 
@@ -39,9 +46,12 @@ impl JobStore {
 
         let event_tx = broadcaster.clone();
 
-        tokio::spawn(async move {
-            let mut map: HashMap<String, Model<Job>> = HashMap::new();
+        let mut map: HashMap<String, Model<Job>> = HashMap::new();
+        for job in job_list {
+            map.insert(job.key.to_string(), job.clone());
+        }
 
+        tokio::spawn(async move {
             while let Some(cmd) = req_receiver.recv().await {
                 info!("req recv: {:?}", cmd);
                 match cmd {
@@ -120,14 +130,20 @@ impl JobStore {
     pub fn subscribe(&self) -> broadcast::Receiver<JobEvent> {
         self.broadcaster.subscribe()
     }
+
+    // load jobs from remote json file
+    pub fn load_jobs(_filename: &str) -> HashMap<String, Model<Job>> {
+        HashMap::new()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
 
     #[test]
-    fn init() {
-        assert!(true);
+    fn load_jobs() {
+        let jobs = JobStore::load_jobs("myfile");
+        assert_eq!(jobs.len(), 0);
     }
 }

@@ -1,8 +1,9 @@
+/// Job models
+///
+// use anyhow::Result;
 use domain_keys::{
     keys::RouteKey, keys::TimeStampKey, models::Model, models::Status, models::Version,
 };
-/// Job models
-///
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -26,17 +27,19 @@ impl JobEvent {
     }
 }
 
+/// Job struct is designed to be serializable enable saving to disk or database actions are run
 #[derive(Debug, Default, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Job {
     pub topic: String,
     pub description: String,
-    pub action: String,
-    pub results: Option<String>,
+    pub action: String,          // an OS Exec command with params
+    pub results: Option<String>, // could be a simple string, comma delimited list, or json blob (why not Any?)
     pub log: Vec<String>,
     pub errors: Vec<String>,
 }
 
 impl Job {
+    /// create a new job with topic and action
     pub fn new(topic: &str, action: &str) -> Job {
         Job {
             topic: topic.to_string(),
