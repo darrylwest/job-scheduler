@@ -3,7 +3,7 @@
 // use anyhow::Result;
 use log::{error, info};
 // use serde::Serialize;
-use crate::models::{Job, JobEvent};
+use crate::models::jobs::{Job, JobEvent};
 use domain_keys::models::Model;
 use hashbrown::HashMap;
 use std::vec::Vec;

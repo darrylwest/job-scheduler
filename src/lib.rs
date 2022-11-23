@@ -2,7 +2,10 @@
 
 pub mod config;
 pub mod job_store;
-pub mod models;
+pub mod models {
+    pub mod jobs;
+    pub mod run_at;
+}
 // pub mod session_store;
 
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);

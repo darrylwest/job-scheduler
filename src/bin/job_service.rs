@@ -7,7 +7,7 @@ use log::{debug, error, info};
 use domain_keys::models::Model;
 use job_scheduler::config::Config;
 use job_scheduler::job_store::{Command, JobStore};
-use job_scheduler::models::Job;
+use job_scheduler::models::jobs::Job;
 use tokio::signal;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
