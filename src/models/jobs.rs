@@ -1,3 +1,4 @@
+use crate::models::run_at::RunAt;
 /// Job models
 ///
 // use anyhow::Result;
@@ -32,6 +33,7 @@ impl JobEvent {
 pub struct Job {
     pub topic: String,
     pub description: String,
+    pub run_at: Option<RunAt>,
     pub action: String,          // an OS Exec command with params
     pub results: Option<String>, // could be a simple string, comma delimited list, or json blob (why not Any?)
     pub log: Vec<String>,
@@ -44,11 +46,20 @@ impl Job {
         Job {
             topic: topic.to_string(),
             description: String::new(),
+            run_at: None,
             action: action.to_string(),
             results: None,
             log: Vec::new(),
             errors: Vec::new(),
         }
+    }
+
+    /// create the job with topic, action and a run at time definition
+    pub fn with_run_at(topic: &str, action: &str, run_at: RunAt) -> Job {
+        let mut job = Job::new(topic, action);
+        job.run_at = Some(run_at);
+
+        job
     }
 
     /// create a new job wrapper model

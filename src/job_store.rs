@@ -15,7 +15,7 @@ use tokio::sync::oneshot;
 
 #[derive(Debug)]
 pub enum Command {
-    Insert(Model<Job>, oneshot::Sender<Option<Model<Job>>>),
+    Insert(Box<Model<Job>>, oneshot::Sender<Option<Model<Job>>>),
     Find(String, oneshot::Sender<Option<Model<Job>>>),
     Remove(String),
     List(usize, usize, oneshot::Sender<Vec<Model<Job>>>), // offset, limit, list (could be empty)
@@ -59,7 +59,8 @@ impl JobStore {
             while let Some(cmd) = req_receiver.recv().await {
                 info!("req recv: {:?}", cmd);
                 match cmd {
-                    Command::Insert(job, tx) => {
+                    Command::Insert(model, tx) => {
+                        let job = model.as_ref();
                         map.insert(job.key.to_string(), job.clone());
 
                         let _ = tx.send(Some(job.clone()));

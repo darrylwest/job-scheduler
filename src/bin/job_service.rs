@@ -31,7 +31,7 @@ async fn insert(request_channel: mpsc::Sender<Command>, model: Model<Job>) -> Re
     });
 
     // 3) create and send the request message
-    let cmd = Command::Insert(model, tx);
+    let cmd = Command::Insert(Box::new(model), tx);
     let r = request_channel.send(cmd).await;
     debug!("Insert call result {:?}", r);
 

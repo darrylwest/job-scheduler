@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 // use chrono::Weekday;
 
 /// RunAt - a cron like structure to specify when this job should run.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct RunAt {
     /// range of 0..59 inclusive
     pub minutes: Vec<u8>, // 0..59
