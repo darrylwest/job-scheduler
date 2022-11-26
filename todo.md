@@ -1,6 +1,6 @@
 # Job Scheduler To Do List
 
-* implement jobs with subcommand
+* implement jobs with subprocess
 * read / write database as json on start / change
 * configure backup job(s)
 * configure system monitor jobs
