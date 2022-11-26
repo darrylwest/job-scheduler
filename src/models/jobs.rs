@@ -34,7 +34,8 @@ pub struct Job {
     pub topic: String,
     pub description: String,
     pub run_at: Option<RunAt>,
-    pub action: String,          // an OS Exec command with params
+    pub action: String, // an OS Exec command with params
+    pub pid: Option<u64>,
     pub results: Option<String>, // could be a simple string, comma delimited list, or json blob (why not Any?)
     pub log: Vec<String>,
     pub errors: Vec<String>,
@@ -48,6 +49,7 @@ impl Job {
             description: String::new(),
             run_at: None,
             action: action.to_string(),
+            pid: None,
             results: None,
             log: Vec::new(),
             errors: Vec::new(),
@@ -84,10 +86,20 @@ mod tests {
     #[test]
     fn new() {
         let job = Job::new("my test job", "backup");
+
+        assert_eq!(job.run_at, None);
+        assert_eq!(job.pid, None);
+        assert_eq!(job.description.is_empty(), true);
+        assert_eq!(job.log.is_empty(), true);
+        assert_eq!(job.errors.is_empty(), true);
+
         let model = Job::create_model(&job);
 
         assert_eq!(model.value, job);
         let json = serde_json::to_string(&model).unwrap();
+
+        assert_eq!(model.value, job);
+
         println!("json: {}", json);
 
         let jmodel: Model<Job> = serde_json::from_str(json.as_str()).unwrap();
