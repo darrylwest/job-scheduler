@@ -1,10 +1,10 @@
 [package]
 name = "job-scheduler"
-version = "0.1.1"
+version = "0.2.1"
 edition = "2021"
 authors = ["darryl.west@raincitysoftware.com"]
 rust-version = "1.63"
-description = "A REST based, redis backed job scheduler."
+description = "A REST based job scheduler."
 keywords = ["jobs"]
 categories = ["jobs", "job-scheduler" ]
 license = "MIT OR Apach-2.0"
@@ -30,6 +30,5 @@ chrono = { version = "0.4", features = ["serde"] }
 toml = "0.5.9"
 reqwest = { version = "0.11", features = ["json"] }
 domain_keys = { git = "https://github.com/darrylwest/domain-keys.git" }
-rxkv = { path = "../rxkv" }
 hashbrown = { version = "0.13.1", features = ["serde"] }
 subprocess = "0.2.9"
