@@ -73,6 +73,7 @@ async fn main() -> Result<()> {
 
     Config::write_pid_file();
 
+    // start the job store/in memory database; listen for job events
     let store = JobStore::new().await;
     let mut event_channel = store.subscribe();
 
@@ -84,7 +85,7 @@ async fn main() -> Result<()> {
 
     // let request_channel = store.request_channel();
 
-    // create an insert function
+    // create a new job and insert into job store
     let job = Job::new("my job 100 name", "no-op");
     let model = Job::create_model(&job);
     let key = model.key.to_string();
